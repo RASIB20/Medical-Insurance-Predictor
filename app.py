@@ -11,11 +11,25 @@ def load_model():
 
 model = load_model()
 
+# Exact training feature list
+FEATURES = [
+    "arthritis",
+    "mental_health",
+    "diastolic_bp",
+    "hypertension",
+    "total_claims_paid",
+    "smoker",
+    "systolic_bp",
+    "chronic_count",
+    "age",
+    "risk_score"
+]
+
 st.title("🩺 Medical Insurance Risk Predictor")
-st.write("Predict whether a person is **High Risk** based on medical & claim data.")
+st.write("Predict whether a person is **High Risk** or **Low Risk**.")
 
 # ---------------------------------
-# Session state for feedback storage
+# Session state for feedback
 # ---------------------------------
 if "feedback_data" not in st.session_state:
     st.session_state.feedback_data = pd.DataFrame(
@@ -26,7 +40,7 @@ if "feedback_data" not in st.session_state:
 # Prediction Form
 # ---------------------------------
 with st.form("prediction_form"):
-    st.subheader("📥 Enter Input Features")
+    st.subheader("📥 Enter Patient Information")
 
     arthritis = st.selectbox("Arthritis (0 = No, 1 = Yes)", [0, 1])
     mental_health = st.selectbox("Mental Health Issue (0 = No, 1 = Yes)", [0, 1])
@@ -59,8 +73,8 @@ if submit:
         "risk_score": risk_score
     }])
 
-    # Ensure column order EXACTLY matches training
-    input_df = input_df[model.feature_names_in_]
+    # 🔥 FORCE correct feature order
+    input_df = input_df[FEATURES]
 
     prediction = model.predict(input_df)[0]
 
