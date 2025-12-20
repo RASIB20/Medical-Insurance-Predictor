@@ -87,4 +87,25 @@ with st.form("feedback_form"):
     accuracy = st.selectbox("Prediction Accuracy", ["Very Accurate", "Accurate", "Not Accurate"])
     suggestion = st.text_area("Suggestions for Improvement")
 
-    feedback_submit = st.form_submit_button("Submit Fee_
+    feedback_submit = st.form_submit_button("Submit Feedback")
+
+if feedback_submit:
+    new_feedback = {
+        "Name": name,
+        "Usability": usability,
+        "Accuracy": accuracy,
+        "Suggestions": suggestion
+    }
+
+    st.session_state.feedback_data = pd.concat(
+        [st.session_state.feedback_data, pd.DataFrame([new_feedback])],
+        ignore_index=True
+    )
+
+    st.success("Thank you for your feedback!")
+
+# ----------------------------
+# Display Feedback Table
+# ----------------------------
+st.subheader("📊 Collected Feedback (Live Session)")
+st.dataframe(st.session_state.feedback_data)
