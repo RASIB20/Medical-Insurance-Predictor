@@ -125,3 +125,48 @@ if submit:
             st.success("✅ Low Risk Patient")
     except ValueError as e:
         st.error(f"Feature Mismatch: {e}")
+
+# ----------------------------
+# Feedback Section
+# ----------------------------
+st.divider() # Adds a visual line separator
+st.subheader("📝 User Feedback")
+
+# Initialize feedback storage in session state if it doesn't exist
+if "feedback_data" not in st.session_state:
+    st.session_state.feedback_data = pd.DataFrame(
+        columns=["Name", "Usability", "Accuracy", "Suggestions"]
+    )
+
+with st.form("feedback_form"):
+    name = st.text_input("Your Name")
+    usability = st.selectbox("Ease of Use", ["Excellent", "Good", "Average", "Poor"])
+    accuracy = st.selectbox("Prediction Accuracy", ["Very Accurate", "Accurate", "Not Accurate"])
+    suggestion = st.text_area("Suggestions for Improvement")
+
+    feedback_submit = st.form_submit_button("Submit Feedback")
+
+if feedback_submit:
+    # Create a new dictionary for the feedback entry
+    new_feedback = {
+        "Name": name,
+        "Usability": usability,
+        "Accuracy": accuracy,
+        "Suggestions": suggestion
+    }
+
+    # Append to the session_state dataframe
+    st.session_state.feedback_data = pd.concat(
+        [st.session_state.feedback_data, pd.DataFrame([new_feedback])],
+        ignore_index=True
+    )
+
+    st.success("Thank you for your feedback!")
+
+# ----------------------------
+# Display Feedback Table
+# ----------------------------
+if not st.session_state.feedback_data.empty:
+    st.subheader("📊 Collected Feedback (Live Session)")
+    st.dataframe(st.session_state.feedback_data, use_container_width=True)
+
