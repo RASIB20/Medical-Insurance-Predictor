@@ -8,6 +8,8 @@ def load_model():
     return joblib.load("random_forest_model.joblib")
 
 model = load_model()
+st.write("Model expects these features:")
+st.write(model.feature_names_in_)
 
 st.title("Health Risk Prediction System")
 st.write("Predict whether a user is **High Risk** based on health & insurance data.")
@@ -100,6 +102,8 @@ if submitted:
         "had_major_procedure": had_major_procedure
     }])
 
+    # Align input features with trained model
+    input_df = input_df[model.feature_names_in_]
     prediction = model.predict(input_df)[0]
 
     if prediction == 1:
@@ -128,3 +132,4 @@ if fb_submit:
 
 st.subheader("📊 Collected Feedback (Live Dataset)")
 st.dataframe(st.session_state.feedback_data)
+
