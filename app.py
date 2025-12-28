@@ -108,23 +108,29 @@ if submit_btn:
         st.error(f"Model Feature Mismatch: {e}")
 
 # ----------------------------
-# 6. Persistent Feedback Section
+# 6. Persistent Feedback Section (Google Sheets Version)
 # ----------------------------
+from streamlit_gsheets import GSheetsConnection
+
 st.divider()
 st.subheader("📝 User Feedback")
 
-FEEDBACK_FILE = "collected_feedback.csv"
+# 1. Establish Connection
+conn = st.connection("gsheets", type=GSheetsConnection)
 
-# Load previous feedback from CSV or initialize session state
-if "feedback_data" not in st.session_state:
-    if os.path.exists(FEEDBACK_FILE):
-        try:
-            st.session_state.feedback_data = pd.read_csv(FEEDBACK_FILE)
-        except:
-            st.session_state.feedback_data = pd.DataFrame(columns=["Name", "Usability", "Accuracy", "Suggestions"])
-    else:
-        st.session_state.feedback_data = pd.DataFrame(columns=["Name", "Usability", "Accuracy", "Suggestions"])
+# 2. Fetch Existing Data
+try:
+    # ttl=5 ensures it refreshes data from the sheet every 5 seconds so you see others' feedback
+    feedback_df = conn.read(worksheet="Sheet1", usecols=[0, 1, 2, 3], ttl=5)
+    
+    # Handle case where sheet is empty (only headers) or None
+    if feedback_df is None:
+         feedback_df = pd.DataFrame(columns=["Name", "Usability", "Accuracy", "Suggestions"])
+except Exception as e:
+    st.error("Could not load feedback data. Check your Google Sheets connection.")
+    feedback_df = pd.DataFrame(columns=["Name", "Usability", "Accuracy", "Suggestions"])
 
+# 3. Form Input
 with st.form("feedback_form"):
     name = st.text_input("Your Name")
     usability = st.selectbox("Ease of Use", ["Excellent", "Good", "Average", "Poor"])
@@ -133,15 +139,32 @@ with st.form("feedback_form"):
 
     feedback_submit = st.form_submit_button("Submit Feedback")
 
+# 4. Handle Submission
 if feedback_submit:
-    new_fb = pd.DataFrame([{"Name": name, "Usability": usability, "Accuracy": accuracy, "Suggestions": suggestion}])
-    st.session_state.feedback_data = pd.concat([st.session_state.feedback_data, new_fb], ignore_index=True)
-    
-    # Save to local CSV file
-    st.session_state.feedback_data.to_csv(FEEDBACK_FILE, index=False)
-    st.success("Thank you! Feedback saved.")
+    if name and suggestion:
+        # Create new row
+        new_feedback = pd.DataFrame([
+            {"Name": name, "Usability": usability, "Accuracy": accuracy, "Suggestions": suggestion}
+        ])
+        
+        # Append to existing data
+        updated_df = pd.concat([feedback_df, new_feedback], ignore_index=True)
+        
+        # Update Google Sheet
+        try:
+            conn.update(worksheet="Sheet1", data=updated_df)
+            st.success("Thank you! Feedback saved forever.")
+            
+            # Rerun to show the new data immediately
+            st.rerun()
+        except Exception as e:
+            st.error(f"Error saving to Google Sheets: {e}")
+    else:
+        st.warning("Please fill in your name and suggestions.")
 
-# Display Feedback Table
-if not st.session_state.feedback_data.empty:
+# 5. Display Feedback History
+if not feedback_df.empty:
     st.subheader("📊 Collected Feedback History")
-    st.dataframe(st.session_state.feedback_data, use_container_width=True)
+    # Show last 5 entries first
+    st.dataframe(feedback_df.tail(5).iloc[::-1], use_container_width=True)
+
